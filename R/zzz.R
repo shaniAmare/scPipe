@@ -20,6 +20,12 @@
   for (package in bioconductor_packages)
     library(package, character.only = TRUE)
   
+  # Install MACS3 for peak calling, and sinto for fragment file generation
+  cat("Installing sinto==0.7.2.2 for fragment file generation\n")
+  reticulate::virtualenv_install(envname="scPipe_env", 
+                                 packages=c("sinto==0.7.2.2")
+                                 )
+  
   if (!"MACSr" %in% installed.packages()[,"Package"]) {
     if (paste0(R.version$major, ".", R.version$minor) > "4.1.0") {
       devtools::install_github("macs3-project/MACSr")
