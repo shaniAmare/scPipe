@@ -15,14 +15,14 @@ sc_atac_aligning <- function (ref,
                               readFile1, 
                               readFile2     = NULL, 
                               readDir       = NULL, 
-                              output_folder = "", 
-                              output_file   = '',
+                              output_folder = NULL, # Path to a directotry
+                              output_file   = NULL, # Some filename e.g. 'aligned.bam'
                               input_format  = "FASTQ",
                               output_format = "BAM",
                               type          = "dna",
                               nthreads      = 1){
   
-  if(output_folder == ''){
+  if(is.null(output_folder)) {
     output_folder <- file.path(getwd(), "scPipe-atac-output")
   }
   
@@ -55,39 +55,38 @@ sc_atac_aligning <- function (ref,
     file = log_file, append = TRUE)
   
   
-  # creating an index if not avaialble
+  # creating an index
   indexPath <-  file.path(output_folder, "genome_index") 
-  if (!file.exists(paste0(indexPath, ".log"))) {
-    Rsubread::buildindex(basename=indexPath, reference=ref)
-  }
+  buildindex (basename=indexPath, reference=ref)
   
-  if (!is.null(output_file)) {
-    fileNameWithoutExtension <- strsplit(basename(readFile1), "\\.")[[1]][1]
-    outbam                   <- paste(output_folder, "/", fileNameWithoutExtension, "_aligned.bam", sep = "")
+  # Generate the output filename
+  if (is.null(output_file)) {
+    # Only exception is if filename (excluding directory name) contains '.'; will only extract the first part
+    fileNameWithoutExtension <- paste0(output_folder, "/", strsplit(basename(readFile1), "\\.")[[1]][1])
+    outbam                   <- paste0(fileNameWithoutExtension, "_aligned.bam")
     cat("Output file name is not provided. Aligned reads are saved in ", outbam, "\n")
   }
-  else{
-    fileNameWithoutExtension <- strsplit(basename(output_file), "\\.")[[1]][1]
-    outbam                   <- paste(output_folder, "/", output_file, sep="")
+  else {
+    fileNameWithoutExtension <- paste(output_folder, strsplit(output_file, "\\.")[[1]][1], sep = "/")
+    outbam                   <- paste0(output_folder, "/", output_file)
   }
   
   #execute Rsubread align()
   align_output_df <- Rsubread::align(
     index       = indexPath,
     readfile1   = readFile1,
-    readfile2   = readFile2, 
+    readfile2   = readFile2,
     sortReadsByCoordinates = TRUE,
     output_file = outbam)
   
   write.csv(align_output_df, file = stats_file, row.names = FALSE, quote = FALSE)
   
-  #generating the bam index
-  #Rsamtools::sortBam(outbam, paste0(fileNameWithoutExtension, "_aligned_sorted"))
-  #Rsamtools::indexBam(outbam)
-  Rsamtools::indexBam(paste0(output_folder, "/", fileNameWithoutExtension, "_aligned.bam"))
+  # generating the bam index
+  Rsamtools::sortBam(outbam, paste0(fileNameWithoutExtension, "_aligned_sorted"))
+  Rsamtools::indexBam(paste0(fileNameWithoutExtension, "_aligned_sorted.bam"))
   
   # get the unmapped mapped stats to be output and stored in a log file
-  bamstats <- Rsamtools::idxstatsBam(paste0(output_folder, "/",fileNameWithoutExtension, "_aligned.bam"))
+  bamstats <- Rsamtools::idxstatsBam(paste0(fileNameWithoutExtension, "_aligned_sorted.bam"))
   write.csv(bamstats, file = paste0(log_and_stats_folder, "stats_file_align_per_chrom.csv"), row.names = FALSE, quote = FALSE)
   
   cat(
@@ -95,13 +94,8 @@ sc_atac_aligning <- function (ref,
       "sc_atac_aligning finishes at ",
       as.character(Sys.time()),
       "\n\n"
-    ), 
+    ),
     file = log_file, append = TRUE)
   
   return(align_output_df)
 } 
-
-
-
-
-
