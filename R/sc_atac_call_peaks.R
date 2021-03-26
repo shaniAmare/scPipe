@@ -31,6 +31,9 @@ sc_atac_call_peaks = function(inbam, ref = NULL, output_folder = NULL, genome_si
     cat("Output Directory Does Not Exist. Created Directory: ", output_folder, "\n")
   }
   
-  MACSr::callpeak(inbam, nomodel = TRUE, shift = 100, extsize = 200, gsize=genome_size, outdir = output_folder)
+  #MACSr::callpeak(inbam, nomodel = TRUE, shift = 100, extsize = 200, gsize=genome_size, outdir = output_folder)
+  reticulate::use_virtualenv("scPipe_env")
+  reticulate::import("MACS3")
+  system2("macs3", c("callpeak", "-t", inbam, "--nomodel", "--shift", 100, "--extsize", 200, "--g", genome_size, "--outdir", output_folder))
   
 }
