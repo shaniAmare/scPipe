@@ -45,7 +45,7 @@ sc_atac_remove_duplicates <- function(inbam, output_folder = ""){
         
         # Check if output directory exists
         if(output_folder == ''){
-          output_folder = file.path(getwd(), "output")
+          output_folder = file.path(getwd(), "scPipe-atac-output")
         }
         
         if (!dir.exists(output_folder)){
