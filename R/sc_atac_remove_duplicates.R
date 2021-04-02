@@ -27,7 +27,7 @@ sc_atac_remove_duplicates <- function(inbam, output_folder = ""){
     
     warning = function(w) {
       samtools.installed <<- FALSE
-      message("samtools was not located. Please make sure it is installed.")
+      message("samtools was not located, so can't remove duplicates. Please make sure it is installed.")
     }
   )
   
@@ -84,4 +84,3 @@ sc_atac_remove_duplicates <- function(inbam, output_folder = ""){
     )
 }
 
-# sc_atac_remove_duplicates("/stornext/Home/data/allstaff/y/yang.p/repos/scPipe/data/demux_testfastq_S1_L001_R1_001_aligned_sorted.bam.bai")

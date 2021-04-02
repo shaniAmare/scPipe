@@ -136,6 +136,8 @@ sc_atac_bam_tagging <- function(inbam,
   # need bedtools v2.26.0 or later
   # system2("bedtools", c("bamToBed", "i", outsortedbam), "|", "awk", c(-F"#" '{print $1"\t"$2}'), stdout = paste(output_folder,"/fragments.bed",sep = ""))
   
+
+  
   cat(
     paste0(
       "sc_atac_tagging finishes at ",
@@ -144,4 +146,13 @@ sc_atac_bam_tagging <- function(inbam,
     ), 
     file = log_file, append = TRUE)
   
+  # Remove duplicates
+  cat("Commencing duplicate removal via samtools rmdup\n")
+  sc_atac_remove_duplicates(paste0(outsortedbam, ".bam"))
+  cat("Finished duplicate removal\n")
+  
+  # Create fragment file
+  cat("Commencing fragment file generation via sinto\n")
+  sc_atac_create_fragments(paste0(outsortedbam, "_markdup.bam"))
+  cat("Finished fragment file generation\n")
 }
