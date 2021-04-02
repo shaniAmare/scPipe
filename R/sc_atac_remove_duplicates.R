@@ -17,7 +17,7 @@ sc_atac_remove_duplicates <- function(inbam, output_folder = ""){
   samtools.installed <<- TRUE
   
   samtools <- "samtools"
-  # samtools <- "/stornext/System/data/apps/samtools/samtools-1.10/bin/samtools"
+  samtools <- "/stornext/System/data/apps/samtools/samtools-1.10/bin/samtools"
   # Check if samtools is installed
   tryCatch(
     {
@@ -59,10 +59,12 @@ sc_atac_remove_duplicates <- function(inbam, output_folder = ""){
         system2(samtools, c("fixmate", "-m", paste(inbam.name, "namecollate.bam", sep="_"), paste(inbam.name, "fixmate.bam", sep="_")))
         system2(samtools, c("sort", "-o", paste(inbam.name, "positionsort.bam", sep="_"), paste(inbam.name, "fixmate.bam", sep="_")))
         system2(samtools, c("markdup", "-s", "-r", paste(inbam.name, "positionsort.bam", sep="_"), paste(inbam.name, "markdup.bam", sep="_")))
+        Rsamtools::indexBam(paste(inbam.name, "markdup.bam", sep="_"))
         
         system2("rm", paste(inbam.name, "namecollate.bam", sep="_"))
         system2("rm", paste(inbam.name, "positionsort.bam", sep="_"))
         system2("rm", paste(inbam.name, "fixmate.bam", sep="_"))
+        
         
         if (file.exists(paste(inbam.name, "markdup.bam", sep="_"))) {
           message(paste("The output BAM file was sent to", output_folder))

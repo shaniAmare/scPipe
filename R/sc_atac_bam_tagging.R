@@ -25,7 +25,7 @@ sc_atac_bam_tagging <- function(inbam,
   if (any(!file.exists(inbam))) {
     stop("At least one input bam file should be present")
   } else {
-    cat("sc_atac_bam_tagging1\n")
+    # cat("sc_atac_bam_tagging1\n")
     inbam = path.expand(inbam)
   }
   
