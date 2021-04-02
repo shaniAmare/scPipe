@@ -7,7 +7,6 @@
 #' @title generating the feature by cell matrix 
 #' @description feature matrix is created using a given demultiplexed BAM file and 
 #' a selected feature type
-#' @param 
 #'
 #' @export
 #' 
