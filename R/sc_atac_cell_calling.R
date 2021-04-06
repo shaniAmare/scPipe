@@ -27,7 +27,7 @@ sc_atac_cell_calling <- function(
     
     # generating the knee plot
     my_counts <- Matrix(mat)
-    br.out    <- DropletUtils::barcodeRanks(my.counts)
+    br.out    <- DropletUtils::barcodeRanks(my_counts)
     
     # Making a plot
     dev.off()
