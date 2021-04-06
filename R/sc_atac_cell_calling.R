@@ -27,10 +27,10 @@ sc_atac_cell_calling <- function(
     
     # generating the knee plot
     my_counts <- Matrix(mat)
-    br.out    <- DropletUtils::barcodeRanks(my.counts)
+    br.out    <- DropletUtils::barcodeRanks(my_counts)
     
     # Making a plot
-    dev.off()
+    while (!is.null(dev.list()))  dev.off()
     png(file=paste0(output_folder, "/scPipe_atac_stats/knee_plot.png"))
         plot(br.out$rank, br.out$total, log="xy", xlab="Rank", ylab="Total")
         o <- order(br.out$rank)
@@ -40,7 +40,7 @@ sc_atac_cell_calling <- function(
         abline(h=metadata(br.out)$inflection, col="forestgreen", lty=2)
         legend("bottomleft", lty=2, col=c("dodgerblue", "forestgreen"), 
                legend=c("knee", "inflection"))
-    dev.off()
+    while (!is.null(dev.list()))  dev.off()
     
     if(is.null(lower)){
       #lower <- floor(0.1*ncol(mat))
