@@ -5,7 +5,11 @@
 \title{sc_atac_create_sce()}
 \usage{
 sc_atac_create_sce(
+<<<<<<< HEAD
   input_folder = NULL,
+=======
+  input_folder,
+>>>>>>> bc249aae08c2a8ff77d45e26086297b903617bcd
   organism = NULL,
   feature_type = NULL,
   pheno_data = NULL,

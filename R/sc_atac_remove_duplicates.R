@@ -17,7 +17,6 @@ sc_atac_remove_duplicates <- function(inbam, output_folder = ""){
   samtools.installed <<- TRUE
   
   samtools <- "samtools"
-  # samtools <- "/stornext/System/data/apps/samtools/samtools-1.10/bin/samtools"
   # Check if samtools is installed
   tryCatch(
     {
@@ -74,11 +73,11 @@ sc_atac_remove_duplicates <- function(inbam, output_folder = ""){
         }
         
       },
-      warning = function(w) {w
+      warning <- function(w) {w
         message(w)
       },
       
-      error = function(e) {
+      error <- function(e) {
         message(e)
       }
     )

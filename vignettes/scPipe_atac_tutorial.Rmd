@@ -47,7 +47,7 @@ barcode_fastq      <- here::here("data","testfastq_S1_L001_R2_001.fastq.gz")
 barcode_1000       <- here::here("data", "testfastq_modified_barcode_1000.csv")
 ```
 
-The pipeline starts with fastq file reformatting. We move the barcode and UMI sequences (if available) to the read name and leave the transcript sequence as is. This outputs a read name that looks like `@[barcode_sequence]_[UMI_sequence]#[readname]` ... Usually the scATAC-Seq data is paired-end and a 16bp long barcode is located on both reads. Here the barcode information is located on a separate fastq file and the length of the barcode fastq file matches the length of the reads files. Therefore, you need a minimal example like below to generate the output.
+The pipeline starts with fastq file reformatting. We move the barcode and UMI sequences (if available) to the read name and leave the transcript sequence as is. This outputs a read name that looks like `@[barcode_sequence]_[UMI_sequence]#[readname]`. Usually the scATAC-Seq data is paired-end and a 16bp long barcode is located on both reads. Here the barcode information is located on a separate fastq file and the length of the barcode fastq file matches the length of the reads files. Therefore, you need a minimal example like below to generate the output.
 
 ```{r,eval=TRUE}
 sc_atac_trim_barcode (r1            = r1, 
@@ -60,19 +60,23 @@ sc_atac_trim_barcode (r1            = r1,
 
 This generates two output fastq files that are appended by the prefix `demux_` to notify that the new files are the reformatted (a.k.a. demultiplexed) `.fastq` files. These will get saved in the `scPipe-atac-output` directory if the user has not specified an `output_folder`.
 
-However, if the barcodes are in the form of a `.csv` file, some extra information on 0-indexed barcode start (`bc_start`) and the barcode length (`bc_length`) are also required to be entered by the user. The algorithms is flexible to do a "look-around" to identify whether the correct parameters are used for a subset of data (hence saving time) and report back to the console if it believes the barcode position is incorrect and/or should be shifted.
+However, if the barcodes are in the form of a `.csv` file, some extra information on 0-indexed barcode start (`id1_st`, `id2_st`) and the barcode length (`id1_len`, `id2_len`) are also required to be entered by the user. The algorithms is flexible to do a "look-around" to identify whether the correct parameters are used for a subset of data (hence saving time) and report back to the console if it believes the barcode position is incorrect and/or should be shifted.
 
 ```{r,eval=FALSE}
 sc_atac_trim_barcode (r1            = r1_barcode, 
                       r2            = r2_barcode, 
                       bc_file       = barcode_1000, 
-                      bc_start      = 3, 
-                      bc_length     = 16, 
+                      id1_st        = -1,  
+                      id1_len       = -1,  
+                      id2_st        = -1,  
+                      id2_len       = -10,  
                       output_folder = "", 
                       rmN           = TRUE)
 ```
 
 To accommodate combinatorial indexing in some scATAC-seq protocols, the `bc_file` parameter will accept a list of barcode files as well (currently only implemented for the `fastq` approach).
+
+Additionally, `rmN`, `rmlow` and `min_qual` oaramters define the quality thresholds for the reads. If there are `Ns` in the barcode or UMI positions those will be discarded by `rmN = TRUE`. `rmlow =TRUE` will remove reads having lower quality than what is defined by `min_qual` (default: 20).
 
 Completion of this function will output three different outputs depending on the findings;
 * complete matches: When the barcode is completely matched and identified in the correct position
@@ -90,7 +94,7 @@ Next, we align reads to the genome. This example uses `Rsubread` but any aligner
 demux_r1        <- here::here("scPipe-atac-output", "demux_testfastq_S1_L001_R1_001.fastq.gz")
 demux_r2        <- here::here("scPipe-atac-output", "demux_testfastq_S1_L001_R3_001.fastq.gz")
 
-reference          <- here::here("data", "genome.fa")
+reference       <- here::here("data", "genome.fa")
 
 sc_atac_aligning(ref       = reference, 
                  readFile1 = demux_r1, 
@@ -111,13 +115,17 @@ sc_atac_bam_tagging (inbam         = bam_to_tag,
                      nthreads      =  6)
 ```
 
-# Peak calling
-
-Similar to many other tools, we have also incorporated the ability to call peaks on a pseudo-bulk level of the demultiplexed reads. We use `MACS3` wrapped underneath to achieve this functionality. 
+# Remove duplicates
 
 % for Phil to complete
 
 # Gemerating a fragment file
+
+% for Phil to complete
+
+# Peak calling
+
+Similar to many other tools, we have also incorporated the ability to call peaks on a pseudo-bulk level of the demultiplexed reads. We use `MACS3` wrapped underneath to achieve this functionality. 
 
 % for Phil to complete
 
@@ -126,10 +134,6 @@ Similar to many other tools, we have also incorporated the ability to call peaks
 After the read alignment and BAM file demultiplexing, a feature set can be used to find the overlap between the aligned reads and the features using the `sc_atac_feature_counting` function. 
 
 Accepted format of the `feature_input` should be either a BED format (i.e. format should have three main columns; chromosome, feature start and feature end, extension of the file is not considered) or a `genome.fasta` file. If using a BED format as the 'feature_input`, the `feature_type` should be either "peak" or "tss". If using a `.fasta` for the `feature_input`, the `feature_type` needs to be defined as `genome_bin`. This `genome.fasta` file will be used within the function to generate a `genome_bin` that defines the array of features. The size of the bins can be set using the `bin_size` parameter (default: 2000). 
-
-Call calling is performed on the data prior to finding overlaps. Currently the `emptyDrops` method from \code{DropletUtils} is implemented. Additionally, regions that are considered anomalous, unstructured, or high signal in next-generation sequencing experiments are excluded using an inbuilt `excluded_regions` file (available are for `organism` `hg19`, `hg38`, and `mm10`) or a user provided `excluded_regions_filename` file in BED format.
-
-The discrepancy of `chr` between the alignment file and the feature file/excluded regions file can also be fixed (using `fix_char` parameter) if needed. Options for `fix_char`are "none", "excluded_regions", "feature", "both".
 
 ```{r,eval=TRUE}
 sorted_tagged_bam <- here::here("scPipe-atac-output","demux_testfastq_S1_L001_R1_001_aligned_tagged_sorted.bam")
@@ -152,6 +156,52 @@ sc_atac_feature_counting (insortedbam   = sorted_tagged_bam,
                           )
 ```
 
+If genome_bin approach is selected, following can be used:
+
+```{r}
+reference <- here::here("data", "genome.fa")
+  
+sc_atac_feature_counting (insortedbam   = sorted_tagged_bam,
+                          feature_input = reference, 
+                          bam_tags      = list(bc="CB", mb="OX"), 
+                          feature_type  = "genome_bin", 
+                          organism      = "hg38",
+                          cell_calling  = FALSE,
+                          genome_size   = NULL,
+                          bin_size      = NULL, 
+                          qc_per_bc_file= NULL,
+                          yieldsize     = 1000000,
+                          mapq          = 20,
+                          exclude_regions = TRUE,
+                          output_folder = "",
+                          fix_chr       = "none"
+)
+```
+
+Call calling is performed on the data prior to finding overlaps. Currently the `emptyDrops` method from \code{DropletUtils} is implemented.
+
+```{r}
+sc_atac_feature_counting (insortedbam   = sorted_tagged_bam,
+                          feature_input = reference, 
+                          bam_tags      = list(bc="CB", mb="OX"), 
+                          feature_type  = "genome_bin",
+                          organism      = "hg38",
+                          cell_calling  = "emptydrops",
+                          genome_size   = NULL,
+                          bin_size      = NULL, 
+                          qc_per_bc_file= NULL,
+                          yieldsize     = 1000000,
+                          mapq          = 20,
+                          exclude_regions = TRUE,
+                          output_folder = "",
+                          fix_chr       = "none"
+                          )
+```
+
+Additionally, regions that are considered anomalous, unstructured, or high signal in next-generation sequencing experiments are excluded using an inbuilt `excluded_regions` file (available are for `organism` `hg19`, `hg38`, and `mm10`) or a user provided `excluded_regions_filename` file in BED format.
+
+The discrepancy of `chr` between the alignment file and the feature file/excluded regions file can also be fixed (using `fix_char` parameter) if needed by adding the string `chr` to the beginning of either the features, and/or excluded regions. So the ptions for `fix_char`are "none", "excluded_regions", "feature", "both".
+
 **NOTE** `genome_bin` approach may be more reliable in detecting sensitive features than using a pseudo-bulk peak calling approach, hence it would make the function slower as well.
 
 The `sc_atac_feature_counting` function generates a matrix format of the feature by cell matrix (features as rows, cell barcodes as columns) in several formats (raw, sparse, binary, jaccard) that can be used downstream to generate a `singleCellExperiment, SCE` object.
@@ -164,9 +214,9 @@ sparseM <- readMM(here::here("scPipe-atac-output", "sparse_matrix.mtx"))
 dplyr::glimpse(sparseM)
 ```
 
-# Generating the *SIngle cell Experiment* object
+# Generating the *Single-cell Experiment (SCE)* object
 
-The 
+Eas=iest way to generate a *SCE* object is to run `sc_atac_create_sce` with the `input_folder` parameter. However, if the default dir name was used for previous steps simply running `sc_atac_create_sce()` would produce a `sce` object in the default location (i.e. `scPipe-atac-output`)
 
 ```{r, eval=FALSE}
 sc_atac_create_sce(input_folder = here::here("scPipe-atac-output"), 
@@ -176,70 +226,12 @@ sc_atac_create_sce(input_folder = here::here("scPipe-atac-output"),
                    report       = TRUE)
 ```
 
-
-We have now completed the preprocessing steps. The feature count matrix is available as a `.rds` file in `scPipe-atac-output/feature_matrix.rds` and quality control statistics are saved in the `scPipe-atac-output/scPipe_atac_stats` folder. These data are useful for later quality control (QC).
-
-
-# Preprocessing data generated by other protocols
-
+We have now completed the preprocessing steps. The feature count matrix is available as a `.rds` file in `scPipe-atac-output/feature_matrix.rds` and quality control statistics are saved in the `scPipe-atac-output/scPipe_atac_stats` folder. These data are useful for later quality control as well (QC).
 
 
 ## Quality Control
 
-The easiest way to create a *SingleCellExperiment* object from the output of `scPipe` preprocessing is using `create_sce_by_dir` function, that will read in the feature count matrix together with the QC information available in the `scPipe_atac_stats` folder.
-
-```{r}
-sc_atac_create_sce()
-```
-
-The dataset we analysed above used ERCC simulated reads from 10 cells of perfect quality. In order to demonstrate QC on a more reaslitic example, we have included an experimental dataset in the `scPipe` software generated by Dr Christine Biben. This experiment profiles gene expression in 383 blood cells for a subset of 1000 genes (to save space). We first create a *SingleCellExperiment* object directly without using the `create_sce_by_dir` function:
-
-```{r}
-data("sc_sample_data")
-data("sc_sample_qc")
-sce = SingleCellExperiment(assays = list(counts = as.matrix(sc_sample_data))) # generate new sce with gene count matrix
-QC_metrics(sce) = sc_sample_qc
-demultiplex_info(sce) = cell_barcode_matching
-UMI_dup_info(sce) = UMI_duplication
-```
-
-There are several plots we can create to assess the overall quality of the experiment. The first is to look at the cell barcode demultiplexing statistics. To do this we generate a bar plot that shows the percentage of reads that uniquely match to the cell barcodes, as well as the unmatched proportion of reads and their alignment rates to introns and exons. If we observe a large proportion of unmatched reads that map to exons, this indicates a failure of the cell barcode demultiplexing.
-
-```{r, fig.height=7, fig.width=7}
-plot_demultiplex(sce)
-```
-
-A second plot shows the duplication rate which can be used to evaluate read depth. UMIs are routinely used to mark individual molecules and after PCR amplification, the same molecule with have multiple copys, which can be identified and removed if they are observed to have the same UMI sequence. Therefore, the copy number of UMIs is an indication of the PCR amplification rate. 
-
-```{r, fig.height=7, fig.width=7}
-plot_UMI_dup(sce)
-```
-
-Next we calculate QC metrics and use the `detect_outlier` function to identify poor quality cells. The `detect_outlier` function has argument `comp` to define the maximum component of the gaussian mixture model. Using the default value of 1 is generally sufficient, but in cases where the data are heterogeneous in terms of quality control metrics, setting this value to 2 or 3 can give better results. This function will remove low quality cells if `type="low"`, large cells if `type="high"` or both when `type="both"`. The `conf` argument specifies the lower and upper confidence intervals for outliers and `detect_outlier` is insensistive to the interval values.
-
-```{r, warning=FALSE, message=FALSE}
-sce = calculate_QC_metrics(sce)
-sce = detect_outlier(sce)
-```
-
-We can plot the alignment statistics per sample as a barplot using
-
-```{r, fig.height=7, fig.width=7}
-plot_mapping(sce, percentage = TRUE, dataname = "sc_sample_data")
-```
-
-and generate pairwise plots of the QC metrics as follows:
-
-```{r, warning=FALSE, message=FALSE, fig.height=7, fig.width=7}
-plot_QC_pairs(sce)
-```
-
-The final step will be to remove the low quality cells by the `remove_outliers` function. 
-
-```{r}
-sce = remove_outliers(sce)
-dim(sce)
-```
+... to be completed ...
 
 # Downstream analysis
 
