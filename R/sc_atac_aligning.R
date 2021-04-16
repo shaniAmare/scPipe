@@ -1,24 +1,36 @@
-#' sc_atac_align()
-#'
+##########################################################
+# Aligning Demultiplxed FASTQ Reads to a Known Reference
+##########################################################
+
+#' @name sc_atac_aligning
+#' @title aligning the demultiplexed FASTQ reads
+#' @description after we run the \code{sc_atac_trim_barcode} to demultiplex the fastq files, we are using this
+#' function to align those fastq files to a known reference.
+#' @param ref the reference genome file (.fasta, .fa format)
+#' @param readFile1 the first fastq file which is mandatory
+#' @param readFile2 the second fastq file, which is required if the data is paired-end
+#' @param index_path if the Rsubread genome build is available user can enter the path here
 #' @return 
 #'
 #' @examples
 #' \dontrun{
-#' 
-#' 
+#' sc_atac_aligning(ref
+#'     readFile1  
+#'     readFile2 
+#'     nthreads  = 6) 
 #' }
-#'
-#' @export
-#'
+#'@export
 
 sc_atac_aligning <- function (ref, 
                               readFile1, 
                               readFile2     = NULL, 
+
                               readDir       = NULL, 
                               output_folder = NULL, # Path to a directotry
                               output_file   = NULL, # Some filename e.g. 'aligned.bam'
                               input_format  = "FASTQ",
                               output_format = "BAM",
+                              index_path    = NULL,
                               type          = "dna",
                               nthreads      = 1){
   
@@ -55,6 +67,7 @@ sc_atac_aligning <- function (ref,
     file = log_file, append = TRUE)
   
   
+<<<<<<< HEAD
   # creating an index
   indexPath <-  file.path(output_folder, "genome_index") 
   buildindex (basename=indexPath, reference=ref)
@@ -62,6 +75,28 @@ sc_atac_aligning <- function (ref,
   # Generate the output filename
   if (is.null(output_file)) {
     # Only exception is if filename (excluding directory name) contains '.'; will only extract the first part
+=======
+  # creating an index if not available
+  if (!is.null(index_path)) {
+    indexPath <- index_path
+    if (!file.exists(paste0(indexPath, ".log"))) {
+      stop("Genome index does not exist in the specificed location. Please check the full index path again.")   
+      }
+  } else {
+    cat("Genome index location not specified. Looking for the index in", output_folder, "\n")
+    indexPath <-  file.path(output_folder, "genome_index") 
+    if (file.exists(paste0(indexPath, ".log"))) {
+      cat("Genome index foound in ", output_folder, "...\n")
+    } else {
+      cat("Genome index not foound. Creating one in ", output_folder, ". This will take a while ...\n")
+      Rsubread::buildindex(basename=indexPath, reference=ref)
+    }
+  }
+  
+  # Generate the output filename
+  if (is.null(output_file)) {
+    # Only exception is if filename (excluding directory name) contains '.' then will only extract the first part
+>>>>>>> master
     fileNameWithoutExtension <- paste0(output_folder, "/", strsplit(basename(readFile1), "\\.")[[1]][1])
     outbam                   <- paste0(fileNameWithoutExtension, "_aligned.bam")
     cat("Output file name is not provided. Aligned reads are saved in ", outbam, "\n")
@@ -79,14 +114,24 @@ sc_atac_aligning <- function (ref,
     sortReadsByCoordinates = TRUE,
     output_file = outbam)
   
-  write.csv(align_output_df, file = stats_file, row.names = FALSE, quote = FALSE)
+  write.csv(align_output_df, file = stats_file, row.names = TRUE, quote = FALSE)
   
+<<<<<<< HEAD
   # generating the bam index
   Rsamtools::sortBam(outbam, paste0(fileNameWithoutExtension, "_aligned_sorted"))
   Rsamtools::indexBam(paste0(fileNameWithoutExtension, "_aligned_sorted.bam"))
   
   # get the unmapped mapped stats to be output and stored in a log file
   bamstats <- Rsamtools::idxstatsBam(paste0(fileNameWithoutExtension, "_aligned_sorted.bam"))
+=======
+  #generating the bam index
+  #Rsamtools::indexBam(paste0(output_folder, "/", fileNameWithoutExtension, "_aligned.bam"))
+  Rsamtools::indexBam(paste0(fileNameWithoutExtension, "_aligned.bam"))
+  
+  # get the unmapped mapped stats to be output and stored in a log file
+  #bamstats <- Rsamtools::idxstatsBam(paste0(output_folder, "/",fileNameWithoutExtension, "_aligned.bam"))
+  bamstats <- Rsamtools::idxstatsBam(paste0(fileNameWithoutExtension, "_aligned.bam"))
+>>>>>>> master
   write.csv(bamstats, file = paste0(log_and_stats_folder, "stats_file_align_per_chrom.csv"), row.names = FALSE, quote = FALSE)
   
   cat(

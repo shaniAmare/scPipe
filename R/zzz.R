@@ -3,8 +3,8 @@
   
   
   # Check if required packages are installed
-  list_of_packages <- c("tools", "tidyr", "locStra", "grid", "dplyr", "Matrix", "seqinr")
-  bioconductor_packages <- c("BiocParallel", "Rsubread", "rtracklayer", "GenomicAlignments", "GenomicRanges", "GenomicFeatures", "Rsamtools", "SingleCellExperiment")
+  list_of_packages <- c("reticulate", "tools", "tidyr", "locStra", "grid", "dplyr", "Matrix", "seqinr", "ggpubr")
+  bioconductor_packages <- c("basilisk", "BiocParallel", "Rsubread", "rtracklayer", "GenomicAlignments", "GenomicRanges", "GenomicFeatures", "Rsamtools", "SingleCellExperiment")
   
   if (!requireNamespace("BiocManager", quietly = TRUE)) 
     install.packages("BiocManager")
@@ -21,12 +21,26 @@
     library(package, character.only = TRUE)
   
   # Install MACS3 for peak calling, and sinto for fragment file generation
+<<<<<<< HEAD
   
   if (!isTRUE("scPipe_env" %in% reticulate::virtualenv_list())) {
     cat("Installing sinto==0.7.2.2 and MACS3==3.0.0a6\n")
     reticulate::virtualenv_install(envname="scPipe_env", 
                                    packages=c("sinto==0.7.2.2", "MACS3==3.0.0a6")
     )
+=======
+  cat("Installing sinto==0.7.2.2 for fragment file generation\n")
+  reticulate::virtualenv_install(envname="scPipe_env", 
+                                 packages=c("sinto==0.7.2.2")
+  )
+  
+  if (!"MACSr" %in% installed.packages()[,"Package"]) {
+    if (paste0(R.version$major, ".", R.version$minor) > "4.1.0") {
+      devtools::install_github("macs3-project/MACSr")
+    } else {
+      cat("R version 4.1.0 or greater is required for sc_atac_peak_calling().\n")
+    }
+>>>>>>> master
   }
   
   # if (!"MACSr" %in% installed.packages()[,"Package"]) {
@@ -38,20 +52,20 @@
   # }
   # Check for platform
   if(.Platform$OS.type != "unix") {
-    packageStartupMessage("Windows platform detected, sc_atac_peak_calling() and sc_atac_remove_duplicates function may not operate. Please call peaks and remove duplicate reads outside the package.")  
+    packageStartupMessage("Windows platform detected, sc_atac_peak_calling() and sc_atac_remove_duplicates() function may not operate. Please call peaks and remove duplicate reads outside the package.")  
   } else {
-    packageStartupMessage("Linux/MacOS detected")
+    cat("Linux/MacOS detected! \n")
     
     # Check if samtools is installed
-    message("Checking if samtools installed")
+    cat("Checking if samtools is installed ... \n")
     tryCatch(
       {
         system2("samtools", stdout = NULL, stderr = NULL)
-        message("samtools was located")
+        message("samtools was located! \n")
       },
       
       warning = function(w) {
-        message("samtools was not located. Please make sure it is installed to run sc_atac_remove_duplicates")
+        packageStartupMessage("samtools was not located. Please make sure it is installed and in path to run sc_atac_remove_duplicates()")
       }
     )
   }
